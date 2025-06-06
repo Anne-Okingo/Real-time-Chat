@@ -3,6 +3,8 @@ package main
 import(
 	"golang.org/x/net/websocket"
 	"fmt"
+	"log"
+	"net/http"
 )
 
 //ChatServer keeps track of all clients connected to the websocket connection
@@ -67,3 +69,18 @@ func (cs *ChatServer) broadcast(message string){
 }
 
 
+
+
+func main(){
+	//create a chat server
+
+	server := NewChatServer()
+
+	//setup websocket route
+
+	http.Handle("/chat", websocket.Handler(server.handleConnection))
+
+	//start the web server
+	fmt.Println("Chat server started on : 8080, connect at ws://localhost:8080/chat")
+	log.Fatal(http.ListenAndServe("8080", nil))
+}
