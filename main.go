@@ -10,7 +10,7 @@ clients map[*websocket.Conn]bool
 }
 
 //this is a new chat server constructor, it also initializes the websocket
-func NewChatServer() * ChatServer {
+func NewChatServer() *ChatServer {
 	return &ChatServer {
 		clients: make(map[*websocket.Conn]bool),
 	}
