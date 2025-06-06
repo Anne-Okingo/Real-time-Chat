@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Real-Time Chat</title>
+  <style>
+    :root {
+      --primary-color: #282c3b;
+      --secondary-color: #3a0ca3;
+      --light-color: #7b8b9b;
+      --dark-color: #212529;
+      --success-color: #4bb543;
+      --error-color: #ff3333;
+    }
+    
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    
+    body {
+      background-color: #53666d;
+      color: var(--dark-color);
+      line-height: 1.6;
+    }
+    
+    .chat-container {
+      max-width: 800px;
+      margin: 20px auto;
+      background: rgb(143, 157, 170);
+      border-radius: 10px;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      height: 90vh;
+    }
+    
+    .chat-header {
+      background: var(--primary-color);
+      color: rgb(194, 205, 212);
+      padding: 15px 20px;
+      text-align: center;
+    }
+    
+    .chat-messages {
+      flex: 1;
+      padding: 20px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    
+    .message {
+      max-width: 70%;
+      padding: 10px 15px;
+      border-radius: 18px;
+      word-wrap: break-word;
+    }
+    
+    .message.received {
+      background: #e9ecef;
+      align-self: flex-start;
+      border-bottom-left-radius: 5px;
+    }
+    
+    .message.sent {
+      background: var(--primary-color);
+      color: white;
+      align-self: flex-end;
+      border-bottom-right-radius: 5px;
+    }
+    
+    .message.system {
+      background: #f8f9fa;
+      color: #6c757d;
+      align-self: center;
+      font-style: italic;
+      font-size: 0.9em;
+    }
+    
+    .chat-input {
+      display: flex;
+      padding: 15px;
+      background: #f8f9fa;
+      border-top: 1px solid #e9ecef;
+    }
+    
+    #messageInput {
+      flex: 1;
+      padding: 12px 15px;
+      border: 1px solid #ddd;
+      border-radius: 30px;
+      outline: none;
+      font-size: 16px;
+    }
+    
+    #messageInput:focus {
+      border-color: var(--primary-color);
+    }
+    
+    #sendButton {
+      background: var(--primary-color);
+      color: white;
+      border: none;
+      border-radius: 30px;
+      padding: 0 20px;
+      margin-left: 10px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: background 0.3s;
+    }
+    
+    #sendButton:hover {
+      background: var(--secondary-color);
+    }
+    
+    .connection-status {
+      padding: 5px 10px;
+      font-size: 0.8em;
+      text-align: center;
+      background: #f8f9fa;
+    }
+    
+    .connected {
+      color: var(--success-color);
+    }
+    
+    .disconnected {
+      color: var(--error-color);
+    }
+    
+    /* Scrollbar styling */
+    .chat-messages::-webkit-scrollbar {
+      width: 8px;
+    }
+    
+    .chat-messages::-webkit-scrollbar-track {
+      background: #f1f1f1;
+    }
+    
+    .chat-messages::-webkit-scrollbar-thumb {
+      background: #ccc;
+      border-radius: 4px;
+    }
+    
+    .chat-messages::-webkit-scrollbar-thumb:hover {
+      background: #aaa;
+    }
+  </style>
+</head>
+<body>
+  <div class="chat-container">
+    <div class="chat-header">
+      <h1>Real-Time Chat</h1>
+    </div>
+    
+    <div class="connection-status disconnected" id="connectionStatus">
+      Connecting to server...
+    </div>
+    
+    <div class="chat-messages" id="chatMessages"></div>
+    
+    <div class="chat-input">
+      <input type="text" id="messageInput" placeholder="Type your message here..." autocomplete="off">
+      <button id="sendButton" onclick="sendMessage()">Send</button>
+    </div>
+  </div>
+
+  <script>
+    // WebSocket connection
+    const socket = new WebSocket("ws://localhost:8080/ws");
+    const chatMessages = document.getElementById('chatMessages');
+    const messageInput = document.getElementById('messageInput');
+    const connectionStatus = document.getElementById('connectionStatus');
+    
+    // Connection opened
+    socket.onopen = () => {
+      connectionStatus.textContent = "✅ Connected to chat server";
+      connectionStatus.className = "connection-status connected";
+      addSystemMessage("You've joined the chat");
+    };
+    
+    // Connection closed
+    socket.onclose = () => {
+      connectionStatus.textContent = "❌ Disconnected from server";
+      connectionStatus.className = "connection-status disconnected";
+      addSystemMessage("You've been disconnected from the chat");
+    };
+    
+    // Error handling
+    socket.onerror = (error) => {
+      console.error("WebSocket error:", error);
+      addSystemMessage("Connection error occurred");
+    };
+    
+    // Message received
+    socket.onmessage = (event) => {
+      addReceivedMessage(event.data);
+    };
+    
+    // Send message function
+    function sendMessage() {
+      const message = messageInput.value.trim();
+      if (message && socket.readyState === WebSocket.OPEN) {
+        socket.send(message);
+        addSentMessage(message);
+        messageInput.value = "";
+      }
+    }
+    
+    // Add message to chat UI
+    function addMessage(text, type) {
+      const messageElement = document.createElement('div');
+      messageElement.className = `message ${type}`;
+      messageElement.textContent = text;
+      chatMessages.appendChild(messageElement);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+    
+    function addSentMessage(text) {
+      addMessage(text, 'sent');
+    }
+    
+    function addReceivedMessage(text) {
+      addMessage(text, 'received');
+    }
+    
+    function addSystemMessage(text) {
+      addMessage(text, 'system');
+    }
+    
+    // Allow sending message with Enter key
+    messageInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        sendMessage();
+      }
+    });
+  </script>
+</body>
+</html>
