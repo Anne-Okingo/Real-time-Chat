@@ -19,9 +19,17 @@ func NewChatServer() *ChatServer {
 
 
 //handleConnection function that manages a new websocket connection eg broadcast msgs
-func (cs * ChatServer) hnadleConnection(ws *websocket.Conn) {
+func (cs * ChatServer) handleConnection(ws *websocket.Conn) {
 	//Add new client to the list
 	clientAddr := ws.RemoteAddr().String()
 	fmt.Printf("Anew client connected:  %s/n", clientAddr)
 	cs.clients[ws] = true
+
+
+	//Ensure clean up after client is disconnected
+	defer func() {
+		ws.Close()
+		delete(cs.clients, ws)
+		fmt.Printf("Client from: %s disconnected /n",clientAddr)
+	}()
 }
