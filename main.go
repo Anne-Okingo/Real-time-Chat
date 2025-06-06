@@ -30,6 +30,24 @@ func (cs * ChatServer) handleConnection(ws *websocket.Conn) {
 	defer func() {
 		ws.Close()
 		delete(cs.clients, ws)
-		fmt.Printf("Client from: %s disconnected /n",clientAddr)
+		fmt.Printf("Client from: %s disconnected \n",clientAddr)
 	}()
+
+	//start listening for maessages from clients
+
+	for {
+		 messages := ""
+
+		 err := websocket.Message.Receive(ws, &messages)
+		 if err != nil{
+			//client disconnected or error occurred
+			break
+		 }
+
+		 fmt.Printf("Received message from %s\n",clientAddr, messages)
+
+
+		 //broadcast the message to all clients
+		 cs.broadcast(messages)
+	}
 }
