@@ -81,6 +81,6 @@ func main(){
 	http.Handle("/chat", websocket.Handler(server.handleConnection))
 
 	//start the web server
-	fmt.Println("Chat server started on : 8080, connect at ws://localhost:8080/chat")
-	log.Fatal(http.ListenAndServe("8080", nil))
+	fmt.Println("Chat server started on :8080, connect at ws://localhost:8080/chat")
+	log.Fatal(http.ListenAndServe(":8080", nil))
 }
