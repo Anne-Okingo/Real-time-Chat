@@ -51,3 +51,19 @@ func (cs * ChatServer) handleConnection(ws *websocket.Conn) {
 		 cs.broadcast(messages)
 	}
 }
+
+//broacdcast send the websocket message to all connected clients
+func (cs *ChatServer) broadcast(message string){
+	 for client := range cs.clients{
+		err := websocket.Message.Send(client, message)
+
+		if err != nil{
+			//if sending fails, assume client disconnected
+			fmt.Println("Error sending to client:", err)
+			client.Close()
+			delete(cs.clients, client)
+		}
+	 }
+}
+
+
